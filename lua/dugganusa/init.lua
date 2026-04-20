@@ -34,7 +34,16 @@ function M.setup(opts)
     end)
   end, {})
 
-  -- Keymap: <leader>di for lookup, <leader>da for AIPM
+  vim.api.nvim_create_user_command("DugganUSATor", function(cmd)
+    local value = cmd.args ~= "" and cmd.args or vim.fn.expand("<cword>")
+    M.tor_check(value)
+  end, { nargs = "?" })
+
+  vim.api.nvim_create_user_command("DugganUSATorHunt", function()
+    M.tor_hunt()
+  end, {})
+
+  -- Keymap: <leader>di for lookup, <leader>da for AIPM, <leader>dt for Tor
   vim.keymap.set("n", "<leader>di", ":DugganUSA<CR>", { silent = true, desc = "DugganUSA: look up word under cursor" })
   vim.keymap.set("v", "<leader>di", function()
     local start_pos = vim.fn.getpos("'<")
@@ -46,6 +55,7 @@ function M.setup(opts)
     M.lookup(table.concat(lines, " "))
   end, { desc = "DugganUSA: look up selection" })
   vim.keymap.set("n", "<leader>da", ":DugganUSAAipm<CR>", { silent = true, desc = "DugganUSA: AIPM audit" })
+  vim.keymap.set("n", "<leader>dt", ":DugganUSATor<CR>", { silent = true, desc = "DugganUSA: Tor relay check" })
 end
 
 function M.lookup(value)
@@ -104,6 +114,84 @@ function M.lookup(value)
     on_stderr = function(_, data)
       local err = table.concat(data, "")
       if err ~= "" then vim.notify("DugganUSA: " .. err, vim.log.levels.ERROR) end
+    end,
+  })
+end
+
+function M.tor_check(ip)
+  if not ip or ip == "" then
+    vim.notify("DugganUSA: no IP under cursor", vim.log.levels.WARN)
+    return
+  end
+
+  vim.notify("DugganUSA: checking Tor relay " .. ip .. "...", vim.log.levels.INFO)
+
+  local cmd = "curl -s"
+  if M.config.api_key ~= "" then
+    cmd = cmd .. " -H 'Authorization: Bearer " .. M.config.api_key .. "'"
+  end
+  cmd = cmd .. " '" .. M.config.api_url .. "/tor/relays?q=" .. ip .. "&limit=1'"
+
+  vim.fn.jobstart(cmd, {
+    stdout_buffered = true,
+    on_stdout = function(_, data)
+      local raw = table.concat(data, "")
+      if raw == "" then return end
+
+      local ok, json = pcall(vim.json.decode, raw)
+      if not ok then vim.notify("DugganUSA: API parse error", vim.log.levels.ERROR); return end
+
+      local hits = (json.data or {}).relays or (json.data or {}).hits or {}
+      if #hits > 0 and hits[1].address == ip then
+        local r = hits[1]
+        local flags = type(r.flags) == "table" and table.concat(r.flags, ",") or (r.flags or "")
+        vim.notify(
+          "🧅 Tor Relay: " .. (r.nickname or "?") .. " | " .. flags ..
+          " | " .. (r.country or "?") .. " | " .. (r.asnOrg or "?") ..
+          " | BW:" .. (r.bandwidth or "?"),
+          vim.log.levels.WARN
+        )
+      else
+        vim.notify("✅ " .. ip .. " is NOT a known Tor relay", vim.log.levels.INFO)
+      end
+    end,
+  })
+end
+
+function M.tor_hunt()
+  vim.notify("DugganUSA: hunting suspicious Tor relays...", vim.log.levels.INFO)
+
+  local cmd = "curl -s"
+  if M.config.api_key ~= "" then
+    cmd = cmd .. " -H 'Authorization: Bearer " .. M.config.api_key .. "'"
+  end
+  cmd = cmd .. " '" .. M.config.api_url .. "/tor/hunt'"
+
+  vim.fn.jobstart(cmd, {
+    stdout_buffered = true,
+    on_stdout = function(_, data)
+      local raw = table.concat(data, "")
+      if raw == "" then return end
+
+      local ok, json = pcall(vim.json.decode, raw)
+      if not ok then vim.notify("DugganUSA: API parse error", vim.log.levels.ERROR); return end
+
+      local relays = (json.data or {}).relays or json.data or {}
+      if #relays == 0 then
+        vim.notify("No suspicious Tor relays found", vim.log.levels.INFO)
+        return
+      end
+
+      local lines = { "Suspicious Tor Relays:" }
+      for i, r in ipairs(relays) do
+        if i > 10 then break end
+        table.insert(lines, string.format(
+          "  %s | %s | %s | Score:%s",
+          r.address or "?", r.nickname or "?", r.country or "?",
+          tostring(r.suspicionScore or r.score or "?")
+        ))
+      end
+      vim.notify(table.concat(lines, "\n"), vim.log.levels.WARN)
     end,
   })
 end
