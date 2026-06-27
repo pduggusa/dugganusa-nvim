@@ -108,7 +108,7 @@ function M.lookup(value)
         local summary = table.concat(parts, " · ")
         vim.notify("⚠️  DugganUSA: " .. value .. " — " .. summary .. " (" .. total_hits .. " hits)", vim.log.levels.WARN)
       else
-        vim.notify("✅ DugganUSA: " .. value .. " — clean (not in 1.08M+ IOC index)", vim.log.levels.INFO)
+        vim.notify("✅ DugganUSA: " .. value .. " — clean (not in 1.10M+ IOC index)", vim.log.levels.INFO)
       end
     end,
     on_stderr = function(_, data)

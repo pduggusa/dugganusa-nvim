@@ -1,6 +1,16 @@
 # DugganUSA Threat Intel — Neovim Plugin
 
-**Check IPs, domains, hashes, CVEs under cursor against 1M+ IOCs. For the terminal crowd.**
+**Check IPs, domains, hashes, CVEs under cursor against 1.10M+ IOCs. For the terminal crowd.**
+
+## What's New
+
+The corpus this plugin queries now ships **three live, no-auth, durable validation endpoints** so you can verify feed quality yourself — they survive deploys, so the numbers are real:
+
+- **Novelty** — [feed-uniqueness](https://analytics.dugganusa.com/api/v1/feed-uniqueness): ~75%+ of what we publish is **not in ThreatFox**.
+- **Timeliness** — [kev-lead](https://analytics.dugganusa.com/api/v1/kev-lead): we flag exploited CVEs roughly **31 days ahead of CISA KEV** on average.
+- **Accuracy** — [spamhaus-validation](https://analytics.dugganusa.com/api/v1/spamhaus-validation): Spamhaus **independently corroborates** our first-hand contributions.
+
+So the indicator under your cursor is checked against intel that is independently novel, early, and corroborated. (We cap our own claims at 95% honest confidence.)
 
 ## Install
 
@@ -43,7 +53,7 @@ require("dugganusa").setup({
 })
 ```
 
-Free tier works without a key. Get one at [analytics.dugganusa.com/stix/register](https://analytics.dugganusa.com/stix/register).
+The feed is **API-key-enforced** — anonymous requests return `401`, an unregistered token returns `429`. The free tier is a **free registered key**, not anonymous access. Register (30 seconds, no card) at [analytics.dugganusa.com/stix/register](https://analytics.dugganusa.com/stix/register), then set `api_key` or the `DUGGANUSA_API_KEY` env var.
 
 ## Requirements
 
