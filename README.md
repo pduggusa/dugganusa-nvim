@@ -1,6 +1,6 @@
 # DugganUSA Threat Intel — Neovim Plugin
 
-**Check IPs, domains, hashes, CVEs under cursor against 1.5M+ IOCs. For the terminal crowd.**
+**Check IPs, domains, hashes, CVEs under cursor against 1.9M+ IOCs. For the terminal crowd.**
 
 ## What's New
 

@@ -1,5 +1,5 @@
 -- DugganUSA Threat Intel Scanner for Neovim
--- Check IPs, domains, hashes, CVEs under cursor against 1M+ IOCs.
+-- Check IPs, domains, hashes, CVEs under cursor against 1.9M+ IOCs.
 --
 -- Usage:
 --   :DugganUSA           — look up word under cursor
@@ -162,7 +162,7 @@ function M.lookup(value)
         local summary = table.concat(parts, " · ")
         vim.notify("⚠️  DugganUSA: " .. value .. " — " .. summary .. " (" .. total_hits .. " hits)", vim.log.levels.WARN)
       else
-        vim.notify("✅ DugganUSA: " .. value .. " — clean (not in 1.10M+ IOC index)", vim.log.levels.INFO)
+        vim.notify("✅ DugganUSA: " .. value .. " — clean (not in 1.9M+ IOC index)", vim.log.levels.INFO)
       end
     end,
     on_stderr = function(_, data)

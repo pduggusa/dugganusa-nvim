@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.2 (2026-09-29)
+
+### Security
+- **Fixed command injection (RCE) via the indicator under the cursor.** `M.lookup()` built an escaped URL and then discarded it, re-interpolating the raw value into a shell string passed to `jobstart()`. Opening a hostile file and running a lookup on a crafted token executed arbitrary commands. All four shell call sites (`lookup`, `tor_check`, `tor_hunt`, `DugganUSAAipm`) now use argv form with no shell, and every interpolated value is URL-encoded. Committed 2026-07-19; this is its first tagged release. **Upgrade.**
+
+### Changed
+- Refreshed corpus figures from the live `/api/v1/search/stats` (1.9M+ IOCs, ~68M documents across 70 indexes).
+- Removed the retired "275+ consumers in 46 countries" line. It counted blocked, User-Agent-less scrapers as consumers, so we stopped quoting it on 2026-05-30.
+
 ## 1.2.1 (2026-06-30)
 
 ### Added
