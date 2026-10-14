@@ -1,6 +1,10 @@
 # DugganUSA Threat Intel — Neovim Plugin
 
-**Check IPs, domains, hashes, CVEs under cursor against 1.9M+ IOCs. For the terminal crowd.**
+**You do you. I do me. We share contexts.**
+
+Your buffer stays yours; the plugin sends only the indicator under the cursor and brings back the DugganUSA Feed's context.
+
+**Check IPs, domains, hashes, CVEs under cursor against the DugganUSA Feed. For the terminal crowd.** Corpus size: [live counts](https://analytics.dugganusa.com/api/v1/search/stats).
 
 ## What's New
 
@@ -82,7 +86,7 @@ MIT — [DugganUSA LLC](https://www.dugganusa.com)
 <!-- DUGGANUSA-FAMILY-FOOTER-V1 -->
 ## DugganUSA Defender Family
 
-Same threat corpus, surfaced wherever you live. Open source, MIT licensed, receipts on every repo.
+Same DugganUSA Feed, surfaced wherever you live. Open source, MIT licensed, receipts on every repo.
 
 | Plugin | Surface |
 |---|---|
@@ -99,8 +103,8 @@ Same threat corpus, surfaced wherever you live. Open source, MIT licensed, recei
 | [dugganusa-cli](https://github.com/pduggusa/dugganusa-cli) | CLI scanner |
 | [dugganusa-chrome](https://github.com/pduggusa/dugganusa-chrome) | Chrome extension |
 | [dugganusa-action](https://github.com/pduggusa/dugganusa-action) | GitHub Action |
-| [dredd-mcp](https://github.com/pduggusa/dredd-mcp) | Pre-flight MCP security (this repo) |
+| [dredd-mcp](https://github.com/pduggusa/dredd-mcp) | Dredd: pre-flight MCP security |
 
-Backed by the live DugganUSA threat intel platform: [analytics.dugganusa.com](https://analytics.dugganusa.com).
+Backed by the [DugganUSA Feed](https://analytics.dugganusa.com/stix). Numbers are live: [/api/v1/search/stats](https://analytics.dugganusa.com/api/v1/search/stats). Pricing: [analytics.dugganusa.com/stix/pricing](https://analytics.dugganusa.com/stix/pricing). Contact: help@dugganusa.com.
 
-_Jeevesus saves. Dredd judges._
+_Threat intelligence you can check._
