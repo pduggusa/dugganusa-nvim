@@ -1,5 +1,5 @@
 -- DugganUSA Threat Intel Scanner for Neovim
--- Check IPs, domains, hashes, CVEs under cursor against 1.9M+ IOCs.
+-- Check IPs, domains, hashes, CVEs under cursor against the DugganUSA IOC index.
 --
 -- Usage:
 --   :DugganUSA           — look up word under cursor
@@ -69,6 +69,16 @@ local function curl_start(path, opts)
   return job
 end
 
+-- A 401 (no/unregistered key), 429 (daily limit) or 5xx comes back as a JSON error body with
+-- no results. Reading it as a result reported every indicator clean. Treat it as UNKNOWN.
+local function api_error(json)
+  if type(json) ~= "table" then return "unreadable response" end
+  if json.success == false or json.error ~= nil then
+    return tostring(json.error or "request failed") .. (json.message and (" - " .. tostring(json.message)) or "")
+  end
+  return nil
+end
+
 function M.setup(opts)
   M.config = vim.tbl_extend("force", M.config, opts or {})
 
@@ -135,6 +145,11 @@ function M.lookup(value)
 
       local ok, json = pcall(vim.json.decode, raw)
       if not ok then vim.notify("DugganUSA: API parse error", vim.log.levels.ERROR); return end
+      local err = api_error(json)
+      if err then
+        vim.notify("DugganUSA: UNKNOWN (not checked, NOT clean): " .. err, vim.log.levels.ERROR)
+        return
+      end
 
       local correlations = (json.data or {}).correlations or {}
       local total_hits = 0
@@ -162,7 +177,7 @@ function M.lookup(value)
         local summary = table.concat(parts, " · ")
         vim.notify("⚠️  DugganUSA: " .. value .. " — " .. summary .. " (" .. total_hits .. " hits)", vim.log.levels.WARN)
       else
-        vim.notify("✅ DugganUSA: " .. value .. " — clean (not in 1.9M+ IOC index)", vim.log.levels.INFO)
+        vim.notify("✅ DugganUSA: " .. value .. " — clean (not in the DugganUSA IOC index)", vim.log.levels.INFO)
       end
     end,
     on_stderr = function(_, data)
@@ -188,6 +203,11 @@ function M.tor_check(ip)
 
       local ok, json = pcall(vim.json.decode, raw)
       if not ok then vim.notify("DugganUSA: API parse error", vim.log.levels.ERROR); return end
+      local err = api_error(json)
+      if err then
+        vim.notify("DugganUSA: UNKNOWN (not checked, NOT clean): " .. err, vim.log.levels.ERROR)
+        return
+      end
 
       local hits = (json.data or {}).relays or (json.data or {}).hits or {}
       if #hits > 0 and hits[1].address == ip then
@@ -217,6 +237,11 @@ function M.tor_hunt()
 
       local ok, json = pcall(vim.json.decode, raw)
       if not ok then vim.notify("DugganUSA: API parse error", vim.log.levels.ERROR); return end
+      local err = api_error(json)
+      if err then
+        vim.notify("DugganUSA: UNKNOWN (not checked, NOT clean): " .. err, vim.log.levels.ERROR)
+        return
+      end
 
       local relays = (json.data or {}).relays or json.data or {}
       if #relays == 0 then

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.3 (2026-10-19)
+
+### Security
+- **Failed lookups were reported clean.** `curl -s` returns the API's JSON error body on `401` (no key / unregistered key) and `429` (daily limit); it parsed with no correlations and the plugin printed "clean". Every keyless lookup said clean. An error body is now reported as UNKNOWN (not checked, NOT clean), for `:DugganUSA`, `:DugganUSATor` and `:DugganUSATorHunt`.
+
 ## 1.2.2 (2026-09-29)
 
 ### Security

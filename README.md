@@ -58,7 +58,7 @@ require("dugganusa").setup({
 })
 ```
 
-The feed is **API-key-enforced** — anonymous requests return `401`, an unregistered token returns `429`. The free tier is a **free registered key**, not anonymous access. Register (30 seconds, no card) at [analytics.dugganusa.com/stix/register](https://analytics.dugganusa.com/stix/register), then set `api_key` or the `DUGGANUSA_API_KEY` env var.
+The feed is **API-key-enforced** — anonymous requests and unregistered keys return `401`; a registered key past its daily limit (free: 10/day) returns `429`. The plugin reports either as UNKNOWN, never clean. The free tier is a **free registered key**, not anonymous access. Register (30 seconds, no card) at [analytics.dugganusa.com/stix/register](https://analytics.dugganusa.com/stix/register), then set `api_key` or the `DUGGANUSA_API_KEY` env var.
 
 ## Requirements
 
