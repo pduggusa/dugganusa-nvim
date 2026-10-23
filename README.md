@@ -1,5 +1,7 @@
 # DugganUSA Threat Intel — Neovim Plugin
 
+**Docs:** https://docs.dugganusa.com/quickstart/
+
 **You do you. I do me. We share contexts.**
 
 Your buffer stays yours; the plugin sends only the indicator under the cursor and brings back the DugganUSA Feed's context.
